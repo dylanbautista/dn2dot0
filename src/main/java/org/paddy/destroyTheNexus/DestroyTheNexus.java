@@ -22,6 +22,7 @@ public final class DestroyTheNexus extends JavaPlugin {
         // Plugin startup logic
         getLogger().info("Starting DestroyTheNexus...");
         getServer().getPluginManager().registerEvents(new JoinListener(), this);
+        getServer().getPluginManager().registerEvents(new RegenerableItems(this), this);
 
     }
 
