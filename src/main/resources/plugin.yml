@@ -1,0 +1,6 @@
+name: DestroyTheNexus
+version: '1.0-SNAPSHOT'
+main: org.paddy.destroyTheNexus.DestroyTheNexus
+api-version: '1.20'
+authors: [ Pau Martín & Dylan Bautista ]
+description: The next generation of Destroy the Nexus
