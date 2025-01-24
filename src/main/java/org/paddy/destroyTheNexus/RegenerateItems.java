@@ -1,5 +1,7 @@
 package org.paddy.destroyTheNexus;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -14,6 +16,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.bukkit.Sound;
+import org.bukkit.scheduler.BukkitScheduler;
 
 public class RegenerateItems implements Listener {
     private final JavaPlugin plugin;
@@ -96,12 +99,13 @@ public class RegenerateItems implements Listener {
         block.setType(Material.COBBLESTONE);
         playSound();
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                block.setType(blockType);
-            }
-        }.runTaskLater(plugin, 20L * time);
+        BukkitScheduler scheduler = Bukkit.getScheduler();
+        scheduler.runTaskLater(plugin, () -> {
+            // Regenerar el bloque en la misma ubicación
+            block.setType(blockType);
+            //block.setBlockData(originalData);
+        }, 5 * 20);
+
 
 
     }
