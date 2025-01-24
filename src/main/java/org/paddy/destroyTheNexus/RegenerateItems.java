@@ -3,6 +3,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.EventHandler;
@@ -16,8 +17,12 @@ import org.bukkit.Sound;
 
 public class RegenerateItems implements Listener {
     private final JavaPlugin plugin;
-    //private Block block;
-    //private Material blockType;
+    private Block block;
+    private Material blockType;
+    private Player player;
+    private ItemStack item;
+    private BlockBreakEvent event;
+    private ItemStack itemHand;
     private static final List<Material> REGENERATE_BLOCKS = Arrays.asList(
             Material.DIAMOND_ORE,
             Material.GOLD_ORE,
@@ -36,169 +41,82 @@ public class RegenerateItems implements Listener {
     }
 
     @EventHandler
-    public void onBlockBreak(BlockBreakEvent event) {
-        Block block = event.getBlock();
-        Material blockType = block.getType();
+    public void onBlockBreak(BlockBreakEvent e) {
+        event  = e;
+        block = event.getBlock();
+        blockType = block.getType();
+        player = event.getPlayer();
+        itemHand = player.getInventory().getItemInMainHand();
 
         if(!REGENERATE_BLOCKS.contains(blockType)) return;
 
-        var player = event.getPlayer();
-        ItemStack item = new ItemStack(blockType);
+        item = new ItemStack(blockType);
 
         switch (blockType) {
             case DIAMOND_ORE:
-                regenerateDiamond(event, block, blockType);
+                List<Material> DIAMOND_ALLOWED_ITEMS = Arrays.asList(Material.IRON_PICKAXE, Material.GOLDEN_PICKAXE, Material.DIAMOND_PICKAXE);
+                ItemStack diamond = new ItemStack(Material.DIAMOND);
+                regenerateOre(15, 8, diamond, DIAMOND_ALLOWED_ITEMS);
                 break;
             case GOLD_ORE:
-                regenerateGold(event, block, item, blockType);
+                List<Material> GOLD_ALLOWED_ITEMS = Arrays.asList(Material.STONE_PICKAXE, Material.GOLDEN_PICKAXE, Material.IRON_PICKAXE, Material.DIAMOND_PICKAXE);
+                ItemStack gold = new ItemStack(Material.GOLD_ORE);
+                regenerateOre(12, 5, gold, GOLD_ALLOWED_ITEMS);
                 break;
             case IRON_ORE:
-                playSound(event, block);
-                event.setDropItems(false);
-                player.giveExp(2);
-                player.getInventory().addItem(item);
-                event.getBlock().setType(Material.COBBLESTONE);
-                block.setType(Material.COBBLESTONE);
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        block.setType(blockType); // Regenerar el bloque
-                    }
-                }.runTaskLater(plugin, 20L * 12);
+                List<Material> IRON_ALLOWED_ITEMS = Arrays.asList(Material.STONE_PICKAXE, Material.GOLDEN_PICKAXE, Material.IRON_PICKAXE, Material.DIAMOND_PICKAXE);
+                ItemStack iron = new ItemStack(Material.IRON_ORE);
+                regenerateOre(10, 4, iron, IRON_ALLOWED_ITEMS);
                 break;
 
             case COAL_ORE:
-                playSound(event, block);
-                event.setDropItems(false);
-                event.setExpToDrop(0);
-                player.giveExp(4);
-                item = new ItemStack(Material.COAL);
-                player.getInventory().addItem(item);
-                block.setType(Material.COBBLESTONE);
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        block.setType(blockType); // Regenerar el bloque
-                    }
-                }.runTaskLater(plugin, 20L * 10);
+                List<Material> COAL_ALLOWED_ITEMS = Arrays.asList(Material.STONE_PICKAXE, Material.GOLDEN_PICKAXE, Material.IRON_PICKAXE, Material.DIAMOND_PICKAXE);
+                ItemStack coal = new ItemStack(Material.COAL);
+                regenerateOre(10, 8, coal, COAL_ALLOWED_ITEMS);
                 break;
 
             case EMERALD_ORE:
-                playSound(event, block);
-                event.setDropItems(false);
-                player.giveExp(10);
-                item = new ItemStack(Material.EMERALD);
-                player.getInventory().addItem(item);
-                block.setType(Material.COBBLESTONE);
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        block.setType(blockType);
-                    }
-                }.runTaskLater(plugin, 20L * 15);
+                List<Material> EMERALD_ALLOWED_ITEMS = Arrays.asList(Material.STONE_PICKAXE, Material.GOLDEN_PICKAXE, Material.IRON_PICKAXE, Material.DIAMOND_PICKAXE);
+                ItemStack emerald = new ItemStack(Material.EMERALD);
+                regenerateOre(10, 15, emerald, EMERALD_ALLOWED_ITEMS);
                 break;
+
             case OAK_LOG:
-                regenerateLog(event, block, item, blockType);
+                break;
         }
     }
 
-
-    private void regenerateDiamond(BlockBreakEvent event, Block block, Material blockType) {
-        var player = event.getPlayer();
-        ItemStack itemHand = player.getInventory().getItemInMainHand();
-        List<Material> ALLOWED_ITEMS = Arrays.asList(
-                Material.IRON_PICKAXE,
-                Material.GOLDEN_PICKAXE,
-                Material.DIAMOND_PICKAXE
-        );
-
-        if(!ALLOWED_ITEMS.contains(itemHand.getType())){    //mirar el block.ispreferedtool
-            player.sendMessage(ChatColor.RED + "You can not break the " + blockType.toString().toLowerCase() + " with " + itemHand.getType().name().toLowerCase()+ "!");
-            event.setCancelled(true);
-            return;
-        }
+    //seconds//exp//brokenItem//ItemUser//AllowedItems          boolean true -> if is the same //false if the given item is an item and not a material
+    private void regenerateOre(int time, int exp, ItemStack givenItem, List<Material> allowedItems) {
+        if(!checkBlock(allowedItems)) return;
         event.setDropItems(false);
-
         event.setExpToDrop(0);
-        player.giveExp(2);
-
-        ItemStack item = new ItemStack(Material.DIAMOND);
-        player.getInventory().addItem(item);
+        player.giveExp(exp);
+        player.getInventory().addItem(givenItem);
         block.setType(Material.COBBLESTONE);
-
-        playSound(event, block);
+        playSound();
 
         new BukkitRunnable() {
             @Override
             public void run() {
                 block.setType(blockType);
             }
-        }.runTaskLater(plugin, 20L * 12);
+        }.runTaskLater(plugin, 20L * time);
+
+
     }
 
-    private void regenerateGold(BlockBreakEvent event, Block block, ItemStack item, Material blockType) {
-        var player = event.getPlayer();
-        ItemStack itemHand = player.getInventory().getItemInMainHand();
-        List<Material> ALLOWED_ITEMS = Arrays.asList(
-                Material.STONE_PICKAXE,
-                Material.IRON_PICKAXE,
-                Material.DIAMOND_PICKAXE
-        );
-
-        if(!ALLOWED_ITEMS.contains(itemHand.getType())){
-            player.sendMessage(ChatColor.RED + "You can not break the " + blockType.toString().toLowerCase() + " with " + itemHand.getType().name().toLowerCase()+ "!");
+    private boolean checkBlock(List<Material> allowedItems) {
+        boolean check = true;
+        if(!allowedItems.contains(itemHand.getType())) {
+            player.sendMessage(ChatColor.RED + "You can not break the " + blockType.toString().toLowerCase() + " with " + itemHand.getType().name().toLowerCase() + "!");
             event.setCancelled(true);
-            return;
+            check = false;
         }
-        event.setDropItems(false);
-        event.setExpToDrop(0);
-        player.giveExp(4);
-        player.getInventory().addItem(item);
-        block.setType(Material.COBBLESTONE);
-
-        playSound(event, block);
-
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                block.setType(blockType);
-            }
-        }.runTaskLater(plugin, 20L * 12);
-
+        return check;
     }
 
-    private void regenerateLog(BlockBreakEvent event, Block block, ItemStack item, Material blockType) {
-        var player = event.getPlayer();
-        ItemStack itemHand = player.getInventory().getItemInMainHand();
-        List<Material> ALLOWED_ITEMS = Arrays.asList(
-                Material.WOODEN_AXE,
-                Material.STONE_AXE,
-                Material.IRON_AXE,
-                Material.GOLDEN_AXE,
-                Material.DIAMOND_AXE
-        );
-        if(!ALLOWED_ITEMS.contains(itemHand.getType())){
-            player.sendMessage(ChatColor.RED + "You can not break the " + blockType.toString().toLowerCase() + "!");
-            event.setCancelled(true);
-            return;
-        }
-
-        event.setDropItems(false);
-        event.setExpToDrop(0);
-        player.giveExp(2);
-        player.getInventory().addItem(item);
-
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                block.setType(blockType);
-            }
-        }.runTaskLater(plugin, 20L * 7);
-
-    }
-
-
-    private static void playSound(BlockBreakEvent event, Block block) {
+    private void playSound() {
         event.getPlayer().playSound(
                 block.getLocation(),
                 Sound.ENTITY_EXPERIENCE_ORB_PICKUP,
