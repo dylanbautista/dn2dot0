@@ -1,11 +1,8 @@
 package org.paddy.destroyTheNexus;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.EventHandler;
@@ -15,15 +12,13 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.Arrays;
 import java.util.List;
 
-import org.bukkit.Sound;
-import org.bukkit.scheduler.BukkitScheduler;
+
 
 public class RegenerateItems implements Listener {
     private final JavaPlugin plugin;
     private Block block;
     private Material blockType;
     private Player player;
-    private ItemStack item;
     private BlockBreakEvent event;
     private ItemStack itemHand;
     private static final List<Material> REGENERATE_BLOCKS = Arrays.asList(
@@ -46,67 +41,110 @@ public class RegenerateItems implements Listener {
     @EventHandler
     public void onBlockBreak(BlockBreakEvent e) {
         event  = e;
+        player = event.getPlayer();
+
+        if(player.getGameMode().equals(GameMode.CREATIVE)) return;
+
+        itemHand = player.getInventory().getItemInMainHand();
         block = event.getBlock();
         blockType = block.getType();
-        player = event.getPlayer();
-        itemHand = player.getInventory().getItemInMainHand();
 
         if(!REGENERATE_BLOCKS.contains(blockType)) return;
-
-        item = new ItemStack(blockType);
 
         switch (blockType) {
             case DIAMOND_ORE:
                 List<Material> DIAMOND_ALLOWED_ITEMS = Arrays.asList(Material.IRON_PICKAXE, Material.GOLDEN_PICKAXE, Material.DIAMOND_PICKAXE);
                 ItemStack diamond = new ItemStack(Material.DIAMOND);
-                regenerateOre(15, 8, diamond, DIAMOND_ALLOWED_ITEMS);
+                regenerateOre(20, 8, diamond, DIAMOND_ALLOWED_ITEMS);
                 break;
             case GOLD_ORE:
                 List<Material> GOLD_ALLOWED_ITEMS = Arrays.asList(Material.STONE_PICKAXE, Material.GOLDEN_PICKAXE, Material.IRON_PICKAXE, Material.DIAMOND_PICKAXE);
                 ItemStack gold = new ItemStack(Material.GOLD_ORE);
-                regenerateOre(12, 5, gold, GOLD_ALLOWED_ITEMS);
+                regenerateOre(15, 5, gold, GOLD_ALLOWED_ITEMS);
                 break;
             case IRON_ORE:
                 List<Material> IRON_ALLOWED_ITEMS = Arrays.asList(Material.STONE_PICKAXE, Material.GOLDEN_PICKAXE, Material.IRON_PICKAXE, Material.DIAMOND_PICKAXE);
                 ItemStack iron = new ItemStack(Material.IRON_ORE);
                 regenerateOre(10, 4, iron, IRON_ALLOWED_ITEMS);
                 break;
-
             case COAL_ORE:
                 List<Material> COAL_ALLOWED_ITEMS = Arrays.asList(Material.STONE_PICKAXE, Material.GOLDEN_PICKAXE, Material.IRON_PICKAXE, Material.DIAMOND_PICKAXE);
                 ItemStack coal = new ItemStack(Material.COAL);
                 regenerateOre(10, 8, coal, COAL_ALLOWED_ITEMS);
                 break;
-
             case EMERALD_ORE:
                 List<Material> EMERALD_ALLOWED_ITEMS = Arrays.asList(Material.STONE_PICKAXE, Material.GOLDEN_PICKAXE, Material.IRON_PICKAXE, Material.DIAMOND_PICKAXE);
                 ItemStack emerald = new ItemStack(Material.EMERALD);
-                regenerateOre(10, 15, emerald, EMERALD_ALLOWED_ITEMS);
+                regenerateOre(12, 15, emerald, EMERALD_ALLOWED_ITEMS);
                 break;
-
+            case REDSTONE_ORE:
+                List<Material> REDSTONE_ALLOWED_ITEMS = Arrays.asList(Material.STONE_PICKAXE, Material.GOLDEN_PICKAXE, Material.IRON_PICKAXE, Material.DIAMOND_PICKAXE);
+                ItemStack redstone = new ItemStack(Material.REDSTONE, 4);
+                regenerateOre(12, 11, redstone, REDSTONE_ALLOWED_ITEMS);
+                break;
+            case LAPIS_ORE:
+                List<Material> LAPIS_ALLOWED_ITEMS = Arrays.asList(Material.STONE_PICKAXE, Material.GOLDEN_PICKAXE, Material.IRON_PICKAXE, Material.DIAMOND_PICKAXE);
+                ItemStack lapis = new ItemStack(Material.LAPIS_LAZULI, 8);
+                regenerateOre(12, 12, lapis, LAPIS_ALLOWED_ITEMS);
+                break;
             case OAK_LOG:
+                List<Material> OAK_ALLOWED_ITEMS = Arrays.asList(Material.WOODEN_AXE, Material.STONE_AXE, Material.GOLDEN_AXE, Material.IRON_AXE, Material.DIAMOND_AXE);
+                ItemStack oak = new ItemStack(Material.OAK_LOG);
+                regenerateBlock(8, 4, oak, OAK_ALLOWED_ITEMS);
                 break;
+            case MELON:
+                List<Material> MELON_ALLOWED_ITEMS = Arrays.asList(Material.WOODEN_AXE, Material.STONE_AXE, Material.GOLDEN_AXE, Material.IRON_AXE, Material.DIAMOND_AXE, Material.WOODEN_SWORD, Material.STONE_SWORD, Material.GOLDEN_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD);
+                ItemStack melon = new ItemStack(Material.MELON_SLICE, 5);
+                regenerateBlock(5, 2, melon, MELON_ALLOWED_ITEMS);
         }
-    }
 
-    //seconds//exp//brokenItem//ItemUser//AllowedItems          boolean true -> if is the same //false if the given item is an item and not a material
+    }
     private void regenerateOre(int time, int exp, ItemStack givenItem, List<Material> allowedItems) {
+        if(!checkBlock(allowedItems)) return;
+        event.setDropItems(false);
+        event.setExpToDrop(0);
+        block.setType(Material.COBBLESTONE); //Que pasa si trec aixo?
+        player.giveExp(exp);
+        player.getInventory().addItem(givenItem);
+        playSound();
+
+        Location blockLocation = block.getLocation();
+        Material originalBlockType = blockType;
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                blockLocation.getBlock().setType(Material.COBBLESTONE);
+            }
+        }.runTask(plugin);
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                Block currentBlock = blockLocation.getBlock();
+                currentBlock.setType(originalBlockType);
+            }
+        }.runTaskLater(plugin, 20L * time);
+
+    }
+    private void regenerateBlock(int time, int exp, ItemStack givenItem, List<Material> allowedItems) {
         if(!checkBlock(allowedItems)) return;
         event.setDropItems(false);
         event.setExpToDrop(0);
         player.giveExp(exp);
         player.getInventory().addItem(givenItem);
-        block.setType(Material.COBBLESTONE);
         playSound();
 
-        BukkitScheduler scheduler = Bukkit.getScheduler();
-        scheduler.runTaskLater(plugin, () -> {
-            // Regenerar el bloque en la misma ubicación
-            block.setType(blockType);
-            //block.setBlockData(originalData);
-        }, 5 * 20);
+        Location blockLocation = block.getLocation();
+        Material originalBlockType = blockType;
 
-
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                Block currentBlock = blockLocation.getBlock();
+                currentBlock.setType(originalBlockType);
+            }
+        }.runTaskLater(plugin, 20L * time);
 
     }
 
