@@ -6,6 +6,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.EventHandler;
+import org.paddy.destroyTheNexus.commands.GetJoinSignsCommandExecutor;
+import org.paddy.destroyTheNexus.team.JoinSignController;
 
 public final class DestroyTheNexus extends JavaPlugin {
 
@@ -21,9 +23,14 @@ public final class DestroyTheNexus extends JavaPlugin {
     public void onEnable() {
         // Plugin startup logic
         getLogger().info("Starting DestroyTheNexus...");
+
+        //Register Events
         getServer().getPluginManager().registerEvents(new JoinListener(), this);
         getServer().getPluginManager().registerEvents(new RegenerateItems(this), this);
+        getServer().getPluginManager().registerEvents(JoinSignController.getInstance(), this);
 
+        //Set plugin commands
+        this.getCommand("getjoinsigns").setExecutor(new GetJoinSignsCommandExecutor());
     }
 
     @Override

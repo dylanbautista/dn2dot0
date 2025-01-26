@@ -4,3 +4,8 @@ main: org.paddy.destroyTheNexus.DestroyTheNexus
 api-version: '1.20'
 authors: [ Pau Martín & Dylan Bautista ]
 description: The next generation of Destroy the Nexus
+commands:
+  getJoinSigns:
+    description: Get JoinSigns for users to join a team.
+    usage: /getJoinSigns [blue]
+    permission:
