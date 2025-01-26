@@ -5,14 +5,6 @@ import java.util.List;
 
 public class Team {
 
-    /*
-    *  @brief Colors of the teams.
-    *
-    * */
-    public enum TeamColor {
-        BLUE, RED, YELLOW, GREEN
-    }
-
     //Private attributes
     private List<TeamPlayer> players = new ArrayList<>();
     private TeamColor color;
